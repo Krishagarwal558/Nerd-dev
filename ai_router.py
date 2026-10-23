@@ -180,59 +180,120 @@ async def call_with_failover(prompt: str, json_mode: bool = False, max_tokens: i
     raise RuntimeError("All LLM providers failed: " + " | ".join(errors))
 
 # -------------------------------------------------------------
-# HIGH LEVEL METHODS
+# HIGH LEVEL METHODS: MODULAR DEEP LEARNING CURRICULUM
 # -------------------------------------------------------------
 
-async def generate_course(topic: str, level: str = "advanced", minutes: int = 25) -> tuple[Dict[str, Any], str]:
-    """Generates an intensely concept-focused masterclass with keywords, formulas/frameworks, practical examples, and scenarios"""
-    prompt = f"""You are Nerd Dev, a Principal Scientific & Technical Educator writing in the authoritative, crystal-clear style of GeeksforGeeks and MIT OpenCourseWare.
+async def generate_syllabus(topic: str) -> tuple[Dict[str, Any], str]:
+    """Generates an exhaustive 5-module curriculum roadmap for the topic"""
+    prompt = f"""You are a Principal Curriculum Director and Master Technical Educator.
 Topic: "{topic}"
-
-CRITICAL INSTRUCTIONS:
-1. SUBJECT-AWARE INTELLECT:
-   - If STEM (Physics, Math, Chemistry, CS, Engineering, Quant Economics): Include real physical/mathematical formulas, constants, units, and numerical calculations.
-   - If Humanities / History / Social Sciences (e.g., French Revolution, World War I, Philosophy): Include real historical turning points, causal mechanisms, structural doctrines, and timelines. NEVER INVENT FAKE MATHEMATICAL FORMULAS OR CALCULUS DERIVATIVES FOR HISTORICAL/SOCIAL EVENTS.
-2. NO UNRENDERED LATEX (DISCORD COMPLIANCE):
-   - Discord does NOT support LaTeX rendering (do NOT use \\frac, \\text, \\Delta, \\approx, $...$).
-   - Write all math and equations in clean, readable plain text using standard Unicode (e.g., ², ³, ±, ×, ÷, √, π, θ, Δ, →, ≈) or within standard code blocks (e.g., F = G * (m1 * m2) / r^2).
-3. PROGRESSION (6 Masterclass Slides):
-   - Slide 1: Foundations & Core Origin (Core premise, essential keywords, and historical/physical context)
-   - Slide 2: Mechanics & Internal Systems (Internal state machine, field dynamics, or causal chain)
-   - Slide 3: Deep Technical Breakdown & Calculation (Formula derivation with concrete numbers OR detailed timeline with dates/actors)
-   - Slide 4: Key Invariants, Laws & Nuance (Conservation laws, treaties, or structural complexities)
-   - Slide 5: Edge Cases, Traps & Misconceptions (What popular culture or exam candidates get wrong vs reality)
-   - Slide 6: Real-World Industry & Historical Legacy (Large-scale modern deployment, planetary systems, or modern geopolitical impact)
+Goal: Design an EXHAUSTIVE 5-Module Curriculum that can serve as a student's PRIMARY way of learning this topic from first principles to advanced production mastery.
 
 Return ONLY valid JSON matching this schema:
 {{
   "topic": "{topic}",
-  "total_slides": 6,
-  "slides": [
-    {{
-      "slide_number": 1,
-      "title": "Clear Authoritative Title",
-      "subtitle": "Authoritative fundamental law or premise",
-      "keywords": [
-        "**Keyword 1**: Rigorous technical definition...",
-        "**Keyword 2**: Rigorous technical definition...",
-        "**Keyword 3**: Rigorous technical definition..."
-      ],
-      "core_framework": "Clean plain-text formula with units OR historical causal flow (e.g. Cause A + Cause B -> Consequence C)...",
-      "practical_example": "Concrete step-by-step numerical calculation OR detailed historical event with dates/numbers...",
-      "real_world_scenario": "Real engineering application OR modern historical/geopolitical scenario...",
-      "gfg_pro_tip": "Interview/Exam trap, edge case gotcha, or critical nuance...",
-      "checkpoint": {{
-        "question": "A rigorous conceptual question testing true understanding",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_index": 0,
-        "explanation": "Detailed explanation of why this answer is correct in plain text."
-      }}
-    }}
+  "modules": [
+    {{"number": 1, "title": "Module 1 Title (Core Intuition & The Fundamental Problem)"}},
+    {{"number": 2, "title": "Module 2 Title (Internal Mechanics & Detailed Step-by-Step Walkthrough)"}},
+    {{"number": 3, "title": "Module 3 Title (Production Implementation, Laws & Formulations)"}},
+    {{"number": 4, "title": "Module 4 Title (Mathematical/Systemic Nuance, Invariants & Complexities)"}},
+    {{"number": 5, "title": "Module 5 Title (Edge Traps, Failure Modes & Industry/Real-World Legacy)"}}
   ]
 }}"""
-    raw_text, provider = await call_with_failover(prompt, json_mode=True, max_tokens=4500)
-    data = extract_json(raw_text)
-    return data, provider
+    raw_text, provider = await call_with_failover(prompt, json_mode=True, max_tokens=1000)
+    return extract_json(raw_text), provider
+
+async def generate_module(topic: str, module_info: Dict[str, Any], total_modules: int = 5) -> tuple[Dict[str, Any], str]:
+    """Generates an uncompressed, exhaustive, deep pedagogical lesson for a single module"""
+    mod_num = module_info.get("number", 1)
+    mod_title = module_info.get("title", f"Module {mod_num}")
+
+    prompt = f"""You are a Master Educator (combining GeeksforGeeks technical rigor, Khan Academy pedagogical clarity, and 3Blue1Brown conceptual intuition).
+Topic: "{topic}"
+Module {mod_num} of {total_modules}: "{mod_title}"
+
+The student needs this to be their PRIMARY way of learning. Do NOT write a brief summary, shallow flashcard, or generic bullet points. Provide an EXHAUSTIVE, DEEP, PEDAGOGICAL LESSON that thoroughly teaches this module from first principles.
+
+HARD LENGTH CONSTRAINT: The lesson markdown must be between 1,400 and 1,750 characters. Be dense, substantive, and clear with zero conversational fluff so it completely fills the screen without exceeding Discord's 2,000-character ceiling.
+
+MUST INCLUDE (Format as clean Discord Markdown):
+1. `# 📖 Module {mod_num} of {total_modules}: {mod_title}`
+2. `### 🧠 Core Intuition & Thought Experiment`
+   - Deep conceptual foundation explaining the systemic "why" and mechanics.
+3. `### 🔑 Technical Vocabulary & Invariants`
+   - Bold technical keywords with precise, authoritative definitions.
+4. `### ⚙️ Step-by-Step Walkthrough & Concrete Trace`
+   - If STEM/Algorithm: A concrete numerical trace or array walk-through (Iteration 1, 2, 3 with pointer values or calculations).
+   - If History/Social Science: A concrete causal chain with specific dates, actors, economic figures, and actions.
+5. `### 💻 Implementation, Formula or Core Framework`
+   - Real plain-text formulas with units OR fully commented production code OR historical structural framework.
+6. `### ⚠️ Common Pitfalls & Critical Gotchas`
+   - Exact bugs, exam traps, or popular misconceptions and the precise truth.
+7. `> ⚡ **GFG Key Takeaway:**` Memorable golden rule.
+
+NO LaTeX slashes (no \\frac, \\text, \\Delta, \\approx, $...$). Use clean plain text and Unicode (², ³, ±, ×, ÷, √, π, θ, Δ, →, ≈) or code blocks.
+
+Return ONLY valid JSON:
+{{
+  "module_number": {mod_num},
+  "title": "{mod_title}",
+  "content_markdown": "Full 1,400-1,750 character lesson markdown...",
+  "checkpoint": {{
+    "question": "A rigorous conceptual question testing true understanding of this module",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_index": 0,
+    "explanation": "Detailed explanation of why this answer is correct."
+  }}
+}}"""
+    raw_text, provider = await call_with_failover(prompt, json_mode=True, max_tokens=2200)
+    return extract_json(raw_text), provider
+
+async def generate_deep_dive(topic: str, module_info: Dict[str, Any]) -> tuple[str, str]:
+    """Generates an advanced deep-dive expansion for a module when the student clicks [🔍 Deep Dive]"""
+    mod_num = module_info.get("number", 1)
+    mod_title = module_info.get("title", f"Module {mod_num}")
+
+    prompt = f"""You are a Senior Staff Engineer and University Research Professor.
+Topic: "{topic}"
+Module: "{mod_title}"
+
+The student clicked [🔍 Deep Dive] to explore the advanced mathematics, internal compiler/physical mechanics, and extreme edge cases of this topic.
+
+Write an ADVANCED, IN-DEPTH DEEP DIVE (1,200 - 1,500 characters of clean Discord Markdown):
+1. `## 🔍 Deep Dive: {mod_title}`
+2. `### 🔬 Low-Level Mechanics / Mathematical Proof`
+   - Detailed mathematical proof, cache line behavior, register allocation, or physical relativistic limits.
+3. `### 💥 Production Failure Mode / Catastrophic Outage Case Study`
+   - Real-world production outage or historical crisis caused by failing to understand this concept.
+4. `### 🎯 Advanced Practice Challenge`
+   - A challenging problem for the student to solve with the solution explained step-by-step.
+
+NO LaTeX slashes. Use clean plain text and Unicode.
+"""
+    answer, provider = await call_with_failover(prompt, json_mode=False, max_tokens=1200)
+    return clean_think_tags(answer), provider
+
+async def generate_course(topic: str, level: str = "advanced", minutes: int = 25) -> tuple[Dict[str, Any], str]:
+    """Generates syllabus and immediately compiles Module 1 in full pedagogical depth"""
+    syllabus_data, provider = await generate_syllabus(topic)
+    modules = syllabus_data.get("modules", [])
+    if not modules:
+        modules = [
+            {"number": 1, "title": "Core Intuition & The Fundamental Problem"},
+            {"number": 2, "title": "Internal Mechanics & Concrete Step-by-Step Trace"},
+            {"number": 3, "title": "Production Implementation & Invariant Proofs"},
+            {"number": 4, "title": "Mathematical Rigor & Complexity Nuance"},
+            {"number": 5, "title": "Edge Traps, Failure Modes & Industry Applications"}
+        ]
+    m1_data, p2 = await generate_module(topic, modules[0], len(modules))
+    
+    course_data = {
+        "topic": topic,
+        "total_modules": len(modules),
+        "modules": modules,
+        "slides": [m1_data]
+    }
+    return course_data, provider
 
 async def solve_chat_doubt(user_message: str, slide_context: Optional[str] = None) -> tuple[str, str]:
     """

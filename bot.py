@@ -10,6 +10,8 @@ load_dotenv()
 
 from ai_router import (
     generate_course,
+    generate_module,
+    generate_deep_dive,
     solve_chat_doubt,
     GEMINI_API_KEY,
     GROQ_API_KEY
@@ -55,7 +57,7 @@ class DoubtModal(discord.ui.Modal):
             await interaction.followup.send(content=f"⚠️ Error resolving doubt: {e}", ephemeral=True)
 
 # -------------------------------------------------------------
-# VIEW: INTERACTIVE SLIDE DECK (NORMAL MESSAGE WITH BULLET POINTS)
+# VIEW: INTERACTIVE MASTERCLASS DECK (ON-DEMAND PEDAGOGICAL MODULES)
 # -------------------------------------------------------------
 class SlideDeckView(discord.ui.View):
     def __init__(self, course_data: Dict[str, Any], provider: str, user_id: int):
@@ -63,54 +65,60 @@ class SlideDeckView(discord.ui.View):
         self.course_data = course_data
         self.provider = provider
         self.user_id = user_id
-        self.slides = course_data.get("slides", [])
+        self.topic = course_data.get("topic", "")
+        self.modules = course_data.get("modules", [])
+        self.total_modules = course_data.get("total_modules", len(self.modules) or 5)
+        
+        # Cache for loaded modules: {0: mod1_dict, 1: mod2_dict, ...}
+        self.cached_modules: Dict[int, Dict[str, Any]] = {}
+        for i, s in enumerate(course_data.get("slides", [])):
+            self.cached_modules[i] = s
         self.current_idx = 0
 
     def get_current_message(self) -> str:
-        slide = self.slides[self.current_idx]
-        total_slides = len(self.slides)
-        title = slide.get("title", f"Slide {self.current_idx + 1}")
-        subtitle = slide.get("subtitle")
+        mod_data = self.cached_modules.get(self.current_idx, {})
+        
+        # 1. If content_markdown is already formatted rich lesson:
+        md = mod_data.get("content_markdown")
+        if md:
+            lines = [md.strip()]
+            lines.append(f"\n*(Module {self.current_idx + 1}/{self.total_modules} • Primary Masterclass • Powered by {self.provider})*")
+            msg = "\n".join(lines)
+            if len(msg) > 1950:
+                msg = msg[:1940] + "\n..."
+            return msg
 
-        lines = [f"# 📖 Slide {self.current_idx + 1} of {total_slides}: {title}"]
+        # 2. Fallback to structured keys if present
+        title = mod_data.get("title", f"Module {self.current_idx + 1}")
+        subtitle = mod_data.get("subtitle")
+
+        lines = [f"# 📖 Module {self.current_idx + 1} of {self.total_modules}: {title}"]
         if subtitle:
             lines.append(f"*{subtitle}*\n")
         else:
             lines.append("")
 
-        # 1. Keywords & Core Concepts
-        keywords = slide.get("keywords") or slide.get("concept_breakdown") or slide.get("intuition", [])
+        keywords = mod_data.get("keywords") or mod_data.get("concept_breakdown")
         if isinstance(keywords, list) and keywords:
             lines.append("### 🔑 Key Concepts & Technical Vocabulary")
             for pt in keywords:
                 lines.append(f"• {pt}")
             lines.append("")
-        elif isinstance(keywords, str) and keywords:
-            lines.append(f"### 🔑 Key Concepts & Technical Vocabulary\n• {keywords}\n")
 
-        # 2. Core Framework / Formula / Architecture
-        framework = (
-            slide.get("core_framework")
-            or slide.get("formula_box")
-            or slide.get("visual_or_code")
-            or slide.get("highlight_box")
-            or slide.get("code_snippet")
-            or slide.get("code")
-        )
+        framework = mod_data.get("core_framework") or mod_data.get("formula_box") or mod_data.get("visual_or_code")
         if framework:
             if isinstance(framework, dict):
                 lang = framework.get("language", "text")
                 snippet = framework.get("content", "").strip()
             else:
-                lang = slide.get("visual_lang") or slide.get("highlight_language") or "text"
+                lang = mod_data.get("visual_lang", "text")
                 snippet = str(framework).strip()
             if snippet:
                 lines.append(f"### 📐 Core Law, Framework & Formulations\n```{lang}\n{snippet}\n```\n")
 
-        # 3. Practical Example & Calculation / Case
-        example = slide.get("practical_example") or slide.get("technical_deep_dive")
+        example = mod_data.get("practical_example") or mod_data.get("technical_deep_dive")
         if example:
-            lines.append("### 🧪 Practical Case, Calculation & Walkthrough")
+            lines.append("### 🧪 Practical Case & Concrete Walkthrough")
             if isinstance(example, list):
                 for pt in example:
                     lines.append(f"• {pt}")
@@ -118,8 +126,7 @@ class SlideDeckView(discord.ui.View):
                 lines.append(f"{example}")
             lines.append("")
 
-        # 4. Real-World Scenario & Impact
-        scenario = slide.get("real_world_impact") or slide.get("real_world_scenario")
+        scenario = mod_data.get("real_world_impact") or mod_data.get("real_world_scenario")
         if scenario:
             lines.append("### 🌍 Real-World Impact & Systems")
             if isinstance(scenario, list):
@@ -129,17 +136,11 @@ class SlideDeckView(discord.ui.View):
                 lines.append(f"{scenario}")
             lines.append("")
 
-        # Fallback to paragraph content if needed
-        content = slide.get("content")
-        if content and not keywords and not example:
-            lines.append(f"{content}\n")
-
-        # 5. GFG Pro-Tip & Edge Cases
-        pro_tip = slide.get("gfg_pro_tip") or slide.get("beginner_tip")
+        pro_tip = mod_data.get("gfg_pro_tip") or mod_data.get("beginner_tip")
         if pro_tip:
             lines.append(f"> ⚡ **GFG Pro-Tip & Edge Cases:** {pro_tip}\n")
 
-        lines.append(f"*(Slide {self.current_idx + 1}/{total_slides} • Concept Masterclass • Powered by {self.provider})*")
+        lines.append(f"*(Module {self.current_idx + 1}/{self.total_modules} • Primary Masterclass • Powered by {self.provider})*")
 
         msg = "\n".join(lines)
         if len(msg) > 1950:
@@ -147,14 +148,13 @@ class SlideDeckView(discord.ui.View):
         return msg
 
     def update_buttons(self):
-        total = len(self.slides)
         self.prev_button.disabled = (self.current_idx == 0)
-        self.next_button.disabled = (self.current_idx == total - 1)
+        self.next_button.disabled = (self.current_idx == self.total_modules - 1)
 
     @discord.ui.button(label="◀ Prev", style=discord.ButtonStyle.secondary, disabled=True, row=0)
     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This lesson belongs to another learner.", ephemeral=True)
+            await interaction.response.send_message("This masterclass belongs to another learner.", ephemeral=True)
             return
         if self.current_idx > 0:
             self.current_idx -= 1
@@ -164,39 +164,71 @@ class SlideDeckView(discord.ui.View):
     @discord.ui.button(label="Next ▶", style=discord.ButtonStyle.primary, row=0)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This lesson belongs to another learner.", ephemeral=True)
+            await interaction.response.send_message("This masterclass belongs to another learner.", ephemeral=True)
             return
-        if self.current_idx < len(self.slides) - 1:
-            self.current_idx += 1
+
+        target_idx = self.current_idx + 1
+        if target_idx >= self.total_modules:
+            return
+
+        # If already cached, instant update!
+        if target_idx in self.cached_modules:
+            self.current_idx = target_idx
             self.update_buttons()
             await interaction.response.edit_message(content=self.get_current_message(), view=self)
+            return
+
+        # Generate the next module on-demand with full pedagogical depth
+        await interaction.response.defer()
+        mod_info = self.modules[target_idx] if target_idx < len(self.modules) else {"number": target_idx + 1, "title": f"Module {target_idx + 1}"}
+        try:
+            mod_data, provider = await generate_module(self.topic, mod_info, self.total_modules)
+            self.cached_modules[target_idx] = mod_data
+            self.current_idx = target_idx
+            self.update_buttons()
+            await interaction.edit_original_response(content=self.get_current_message(), view=self)
+        except Exception as e:
+            await interaction.followup.send(content=f"⚠️ Error loading next module: {e}", ephemeral=True)
+
+    @discord.ui.button(label="🔍 Deep Dive", style=discord.ButtonStyle.secondary, row=0)
+    async def deep_dive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This masterclass belongs to another learner.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True)
+        mod_info = self.modules[self.current_idx] if self.current_idx < len(self.modules) else {"number": self.current_idx + 1, "title": f"Module {self.current_idx + 1}"}
+        try:
+            deep_dive_text, provider = await generate_deep_dive(self.topic, mod_info)
+            await interaction.followup.send(content=deep_dive_text, ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(content=f"⚠️ Error generating deep dive: {e}", ephemeral=True)
 
     @discord.ui.button(label="✋ Ask Doubt", style=discord.ButtonStyle.success, row=0)
     async def doubt_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("Please start your own lesson with `/tutor`.", ephemeral=True)
             return
-        slide = self.slides[self.current_idx]
+        mod_info = self.modules[self.current_idx] if self.current_idx < len(self.modules) else {"title": f"Module {self.current_idx + 1}"}
         modal = DoubtModal(
-            topic=self.course_data.get("topic", "Computer Science"),
-            slide_title=slide.get("title", f"Slide {self.current_idx + 1}"),
-            slide_content=str(slide.get("intuition", "")) + " " + str(slide.get("mechanics", ""))
+            topic=self.topic,
+            slide_title=mod_info.get("title", f"Module {self.current_idx + 1}"),
+            slide_content=self.get_current_message()[:400]
         )
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="📝 Quick Quiz", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="📝 Quiz", style=discord.ButtonStyle.secondary, row=0)
     async def quiz_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("Please start your own lesson with `/tutor`.", ephemeral=True)
             return
-        slide = self.slides[self.current_idx]
-        checkpoint = slide.get("checkpoint") or slide.get("quiz")
+        mod_data = self.cached_modules.get(self.current_idx, {})
+        checkpoint = mod_data.get("checkpoint")
         if not checkpoint:
-            await interaction.response.send_message("No quiz for this slide. Continue to the next!", ephemeral=True)
+            await interaction.response.send_message("No checkpoint quiz for this module yet. Continue reading!", ephemeral=True)
             return
         
         quiz_view = QuizView(checkpoint, self.user_id)
-        msg = f"### 📝 Quick Quiz: Concept Check\n**{checkpoint.get('question')}**\n\n"
+        msg = f"### 📝 Checkpoint Quiz: Concept Mastery\n**{checkpoint.get('question')}**\n\n"
         for i, opt in enumerate(checkpoint.get("options", [])):
             msg += f"• **{chr(65 + i)}:** {opt}\n"
         await interaction.response.send_message(content=msg, view=quiz_view, ephemeral=True)
