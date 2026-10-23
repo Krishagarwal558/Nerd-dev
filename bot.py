@@ -88,28 +88,29 @@ class SlideDeckView(discord.ui.View):
         elif isinstance(keywords, str) and keywords:
             lines.append(f"### 🔑 Key Concepts & Technical Vocabulary\n• {keywords}\n")
 
-        # 2. Formula Box / Code / Law
-        formula = (
-            slide.get("formula_box")
+        # 2. Core Framework / Formula / Architecture
+        framework = (
+            slide.get("core_framework")
+            or slide.get("formula_box")
             or slide.get("visual_or_code")
             or slide.get("highlight_box")
             or slide.get("code_snippet")
             or slide.get("code")
         )
-        if formula:
-            if isinstance(formula, dict):
-                lang = formula.get("language", "text")
-                snippet = formula.get("content", "").strip()
+        if framework:
+            if isinstance(framework, dict):
+                lang = framework.get("language", "text")
+                snippet = framework.get("content", "").strip()
             else:
                 lang = slide.get("visual_lang") or slide.get("highlight_language") or "text"
-                snippet = str(formula).strip()
+                snippet = str(framework).strip()
             if snippet:
-                lines.append(f"### 📐 Mathematical Law & Formulations\n```{lang}\n{snippet}\n```\n")
+                lines.append(f"### 📐 Core Law, Framework & Formulations\n```{lang}\n{snippet}\n```\n")
 
-        # 3. Practical Example & Calculation
+        # 3. Practical Example & Calculation / Case
         example = slide.get("practical_example") or slide.get("technical_deep_dive")
         if example:
-            lines.append("### 🧪 Practical Example & Calculation")
+            lines.append("### 🧪 Practical Case, Calculation & Walkthrough")
             if isinstance(example, list):
                 for pt in example:
                     lines.append(f"• {pt}")
@@ -117,10 +118,10 @@ class SlideDeckView(discord.ui.View):
                 lines.append(f"{example}")
             lines.append("")
 
-        # 4. Real-World Scenario
-        scenario = slide.get("real_world_scenario")
+        # 4. Real-World Scenario & Impact
+        scenario = slide.get("real_world_impact") or slide.get("real_world_scenario")
         if scenario:
-            lines.append("### 🌍 Real-World Production Scenario")
+            lines.append("### 🌍 Real-World Impact & Systems")
             if isinstance(scenario, list):
                 for pt in scenario:
                     lines.append(f"• {pt}")

@@ -184,24 +184,24 @@ async def call_with_failover(prompt: str, json_mode: bool = False, max_tokens: i
 # -------------------------------------------------------------
 
 async def generate_course(topic: str, level: str = "advanced", minutes: int = 25) -> tuple[Dict[str, Any], str]:
-    """Generates an intensely concept-focused masterclass with keywords, formulas, practical examples, and scenarios"""
-    prompt = f"""You are a Principal Scientific & Technical Educator writing in the authoritative, concept-packed style of GeeksforGeeks, MIT OpenCourseWare, and AMD Developer Guides.
+    """Generates an intensely concept-focused masterclass with keywords, formulas/frameworks, practical examples, and scenarios"""
+    prompt = f"""You are Nerd Dev, a Principal Scientific & Technical Educator writing in the authoritative, crystal-clear style of GeeksforGeeks and MIT OpenCourseWare.
 Topic: "{topic}"
 
-GOAL: Make the course INTENSELY CONCEPT-FOCUSED. Zero fluff, zero generic filler. Every slide must be packed with:
-1. Core Keywords & Technical Vocabulary (precise definitions, terminology, and invariants).
-2. Exact Mathematical Formulas, Laws & Architecture (variables, constants, units, derivations, or code/diagrams).
-3. Concrete Numerical Calculations & Practical Examples (plugging real numbers into formulas or real code execution traces).
-4. Real-World Engineering / Scientific Scenarios (e.g. GPS relativistic drift, orbital mechanics, memory leak outages, distributed consensus).
-5. GFG Pro-Tip & Edge Cases (subtle gotchas, exam traps, boundary limits, off-by-one, overflow).
-
-PROGRESSION (6 Masterclass Slides):
-- Slide 1: Foundations & Core Mathematical / Physical Laws (Definitions, basic law, foundational keywords, and simple calculation)
-- Slide 2: Under-the-Hood Mechanics & Field Dynamics (Internal state machine, field/potential behavior, visual diagram / formula)
-- Slide 3: Deep Technical Implementation & Numerical Walkthrough (Exact formula derivation with step-by-step numbers OR complete working code)
-- Slide 4: Mathematical Rigor, Complexities & Invariants (Time/space complexity O(...), proofs, recurrence relations, physical units & constants)
-- Slide 5: Edge Cases, Corner Traps & Critical Failure Modes (Boundary limits, singularity/overflow, common misconceptions)
-- Slide 6: Real-World Industry Scenarios & Trade-Offs (Large-scale production deployment, planetary systems, benchmarks, comparative matrix)
+CRITICAL INSTRUCTIONS:
+1. SUBJECT-AWARE INTELLECT:
+   - If STEM (Physics, Math, Chemistry, CS, Engineering, Quant Economics): Include real physical/mathematical formulas, constants, units, and numerical calculations.
+   - If Humanities / History / Social Sciences (e.g., French Revolution, World War I, Philosophy): Include real historical turning points, causal mechanisms, structural doctrines, and timelines. NEVER INVENT FAKE MATHEMATICAL FORMULAS OR CALCULUS DERIVATIVES FOR HISTORICAL/SOCIAL EVENTS.
+2. NO UNRENDERED LATEX (DISCORD COMPLIANCE):
+   - Discord does NOT support LaTeX rendering (do NOT use \\frac, \\text, \\Delta, \\approx, $...$).
+   - Write all math and equations in clean, readable plain text using standard Unicode (e.g., ², ³, ±, ×, ÷, √, π, θ, Δ, →, ≈) or within standard code blocks (e.g., F = G * (m1 * m2) / r^2).
+3. PROGRESSION (6 Masterclass Slides):
+   - Slide 1: Foundations & Core Origin (Core premise, essential keywords, and historical/physical context)
+   - Slide 2: Mechanics & Internal Systems (Internal state machine, field dynamics, or causal chain)
+   - Slide 3: Deep Technical Breakdown & Calculation (Formula derivation with concrete numbers OR detailed timeline with dates/actors)
+   - Slide 4: Key Invariants, Laws & Nuance (Conservation laws, treaties, or structural complexities)
+   - Slide 5: Edge Cases, Traps & Misconceptions (What popular culture or exam candidates get wrong vs reality)
+   - Slide 6: Real-World Industry & Historical Legacy (Large-scale modern deployment, planetary systems, or modern geopolitical impact)
 
 Return ONLY valid JSON matching this schema:
 {{
@@ -210,22 +210,22 @@ Return ONLY valid JSON matching this schema:
   "slides": [
     {{
       "slide_number": 1,
-      "title": "Clear Technical Title",
+      "title": "Clear Authoritative Title",
       "subtitle": "Authoritative fundamental law or premise",
       "keywords": [
         "**Keyword 1**: Rigorous technical definition...",
         "**Keyword 2**: Rigorous technical definition...",
         "**Keyword 3**: Rigorous technical definition..."
       ],
-      "formula_box": "Exact formula with variables and units defined, or ASCII diagram / code snippet...",
-      "practical_example": "Concrete step-by-step numerical calculation, trace, or dry-run...",
-      "real_world_scenario": "Real engineering, astrophysical, or production scenario...",
-      "gfg_pro_tip": "Interview/Exam trap, edge case gotcha, or boundary rule...",
+      "core_framework": "Clean plain-text formula with units OR historical causal flow (e.g. Cause A + Cause B -> Consequence C)...",
+      "practical_example": "Concrete step-by-step numerical calculation OR detailed historical event with dates/numbers...",
+      "real_world_scenario": "Real engineering application OR modern historical/geopolitical scenario...",
+      "gfg_pro_tip": "Interview/Exam trap, edge case gotcha, or critical nuance...",
       "checkpoint": {{
         "question": "A rigorous conceptual question testing true understanding",
         "options": ["Option A", "Option B", "Option C", "Option D"],
         "correct_index": 0,
-        "explanation": "Detailed explanation of why this answer is correct."
+        "explanation": "Detailed explanation of why this answer is correct in plain text."
       }}
     }}
   ]
@@ -237,22 +237,28 @@ Return ONLY valid JSON matching this schema:
 async def solve_chat_doubt(user_message: str, slide_context: Optional[str] = None) -> tuple[str, str]:
     """
     Concept-Focused Doubt & Explanation Solver:
-    - Provides keywords, formulas, practical examples, and real-world scenarios.
-    - If off-topic / casual chat -> Politely redirects in <= 15 words to preserve free tokens.
+    - Provides keywords, real formulas/frameworks, practical examples, and real-world scenarios.
+    - Zero unrendered LaTeX; natural subject adaptation.
     """
-    guardrail_prompt = f"""You are Nerd Dev, an elite universal tutor who explains doubts across ANY subject (Science, Math, History, Tech, Coding, Economics) using rigorous keywords, exact formulas, practical examples, and real-world scenarios.
+    guardrail_prompt = f"""You are Nerd Dev, an elite universal tutor who explains doubts across ANY subject (Science, Math, History, Tech, Coding, Economics) using rigorous keywords, exact formulas or historical frameworks, practical examples, and real-world scenarios.
+
+CRITICAL FORMATTING RULES:
+1. DISCORD COMPLIANCE: NEVER use LaTeX syntax (no \\frac, \\text, \\Delta, \\approx, $...$). Write all math and relationships in clean plain text using standard Unicode (², ³, ±, ×, ÷, √, π, θ, Δ, →, ≈) or code blocks.
+2. SUBJECT ADAPTATION:
+   - For STEM: Real formulas, constants, and calculations.
+   - For History/Humanities: Causal timelines, turning points, and real historical facts. Do NOT invent fake mathematical formulas for history.
 
 STRICT SCOPE GUARDRAILS:
 1. IF off-topic inquiry (casual chit-chat, weather, personal gossip, politics, jokes, non-educational creative writing, roleplay, etc.):
    Reply with EXACTLY this (and nothing else):
    "I am Nerd Dev, your 1-on-1 tutor. Ask me any concept in science, math, history, coding, or any subject!"
 2. IF genuine educational inquiry:
-   - Structure clearly with high-signal concept focus:
-     🔑 **Keywords & Core Law**: [Bold technical terms and definitions]
-     📐 **Formula / Relationship**: [Formula or invariant with units/variables]
-     🧪 **Practical Example**: [Concrete numbers, calculation, or code trace]
-     🌍 **Real-World Scenario**: [Real physical, historical, or software scenario]
-     ⚡ **GFG Pro-Tip**: [Common edge gotcha or mistake to avoid]
+   - Structure clearly:
+     🔑 **Keywords & Core Concept**: [Bold technical terms and definitions]
+     📐 **Core Law / Framework**: [Formula with units OR historical causal chain (NO LaTeX)]
+     🧪 **Practical Example**: [Concrete numbers, calculation, or historical case]
+     🌍 **Real-World Impact**: [Real physical or geopolitical consequence]
+     ⚡ **GFG Pro-Tip**: [Common edge gotcha or misconception to avoid]
    - Keep it concise, high-signal, and easy to read.
 
 {f'ACTIVE SLIDE CONTEXT: {slide_context}' if slide_context else ''}
