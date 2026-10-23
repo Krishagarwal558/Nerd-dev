@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nerd Dev — Professional First-Principles Masterclasses</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Mermaid.js for clean diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            bgDark: '#080C14',
+            surface: '#0F1626',
+            surfaceCard: '#151E33',
+            surfaceBorder: '#23304E',
+            gfgGreen: '#008643',
+            amdRed: '#ED1C24'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080C14;
+      color: #E2E8F0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Smooth Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080C14; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    
+    .sound-wave {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 14px;
+    }
+    .sound-wave span {
+      width: 2px;
+      background-color: #38BDF8;
+      border-radius: 999px;
+      animation: wave 1s ease-in-out infinite alternate;
+    }
+    .sound-wave span:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+    .sound-wave span:nth-child(2) { height: 100%; animation-delay: 0.25s; }
+    .sound-wave span:nth-child(3) { height: 60%; animation-delay: 0.15s; }
+    .sound-wave span:nth-child(4) { height: 80%; animation-delay: 0.3s; }
+    @keyframes wave {
+      0% { height: 25%; }
+      100% { height: 100%; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-40 bg-[#080C14]/90 backdrop-blur-md border-b border-surfaceBorder/80 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div onclick="resetToSetup()" class="cursor-pointer flex items-center gap-2.5 group">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-sm tracking-tight text-white block leading-none">NERD DEV</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wider">DEV GUIDE • FIRST PRINCIPLES</span>
+        </div>
+      </div>
+
+      <div id="activeTopicBadge" class="hidden pl-4 border-l border-slate-800 flex items-center gap-2 text-xs">
+        <span id="topicNameHeader" class="font-semibold text-slate-200 truncate max-w-[220px]"></span>
+        <span id="slideIndicator" class="px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 font-mono text-[11px] border border-indigo-800/50"></span>
+      </div>
+    </div>
+
+    <!-- Center: Timer -->
+    <div id="sessionTimer" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-surfaceBorder font-mono text-xs text-slate-300">
+      <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+      <span id="timeRemainingText">20:00</span>
+      <span class="text-[10px] text-slate-500 uppercase">left</span>
+    </div>
+
+    <!-- Right Controls: Narration Mode Toggle & GPU Status -->
+    <div class="flex items-center gap-3">
+      
+      <!-- NARRATION MODE TOGGLE PILL -->
+      <div id="narrationToggleContainer" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-surface border border-surfaceBorder text-xs">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="mic" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span class="text-slate-300 font-medium text-[11px]">Narration Mode:</span>
+        </div>
+
+        <button 
+          id="narrationModeBtn"
+          onclick="toggleNarrationMode()" 
+          class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold transition-all bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+          title="Toggle automatic voice lecture on/off (Hotkey: N)"
+        >
+          <span id="narrationDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span id="narrationModeLabel">ON</span>
+        </button>
+
+        <!-- Speed control -->
+        <button 
+          id="speedBtn"
+          onclick="cycleSpeed()" 
+          class="text-[10px] font-mono text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 transition-colors"
+          title="Voice Speed"
+        >
+          1.0x
+        </button>
+      </div>
+
+      <!-- GPU Status Pill -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface border border-surfaceBorder font-mono text-xs">
+        <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span class="text-slate-300 text-[11px]">RTX 3050</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6 md:py-8 flex flex-col justify-center">
+
+    <!-- 1. SETUP VIEW (SIMPLE & INVITING) -->
+    <div id="setupView" class="space-y-8 max-w-2xl mx-auto w-full py-4">
+      <div class="text-center space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/70 border border-indigo-800/60 text-indigo-300 text-xs font-mono">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>GFG & AMD Developer Style Technical Education</span>
+        </div>
+
+        <h1 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          Master Any Topic Deeply <br/>
+          <span class="bg-gradient-to-r from-indigo-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">
+            Without Walls of Text
+          </span>
+        </h1>
+        <p class="text-slate-400 text-sm md:text-base leading-relaxed">
+          Clean visual breakdowns, intuitive analogies, production code, and live voice narration.
+        </p>
+      </div>
+
+      <!-- Topic Input Box -->
+      <div class="bg-surface border border-surfaceBorder rounded-2xl p-6 shadow-2xl space-y-5">
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+            Enter Topic or System Architecture
+          </label>
+          <div class="flex gap-2">
+            <input 
+              id="topicInput" 
+              type="text" 
+              placeholder="e.g. Machine Learning, Raft Consensus, Linux Epoll, Transformers, Rust Lifetimes..." 
+              class="flex-1 px-4 py-3 rounded-xl bg-[#090D16] border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              onkeydown="if(event.key==='Enter') startCourse()"
+            />
+            <button 
+              id="startBtn"
+              onclick="startCourse()" 
+              class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs md:text-sm flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all shrink-0"
+            >
+              <span>Generate Masterclass</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pacing & Depth Options -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-800/80 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Pacing:</span>
+            <select id="timeSelect" class="bg-[#090D16] border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs">
+              <option value="15">15 min Sprint</option>
+              <option value="20" selected>20 min Standard</option>
+              <option value="35">35 min Deep Dive</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Target Depth:</span>
+            <select id="levelSelect" class="bg-[#090D16] border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate" selected>Intermediate</option>
+              <option value="senior">Senior Practitioner</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loadingStatus" class="hidden pt-4 border-t border-slate-800 text-center text-xs font-mono text-indigo-400 animate-pulse">
+          ⚡ Architecting GFG/AMD-grade slides on your local RTX 3050...
+        </div>
+      </div>
+
+      <!-- Quick Topics -->
+      <div class="space-y-2.5">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Popular Masterclasses:</div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="pickTopic('Machine Learning & Neural Nets')" class="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder hover:border-indigo-500 text-xs text-slate-300 hover:text-white transition-all">Machine Learning</button>
+          <button onclick="pickTopic('Raft Consensus Algorithm')" class="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder hover:border-indigo-500 text-xs text-slate-300 hover:text-white transition-all">Raft Consensus</button>
+          <button onclick="pickTopic('Transformers & Attention Mechanism')" class="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder hover:border-indigo-500 text-xs text-slate-300 hover:text-white transition-all">Transformers & Attention</button>
+          <button onclick="pickTopic('Linux Epoll & Async I/O')" class="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder hover:border-indigo-500 text-xs text-slate-300 hover:text-white transition-all">Linux Epoll</button>
+          <button onclick="pickTopic('Rust Borrow Checker & Lifetimes')" class="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder hover:border-indigo-500 text-xs text-slate-300 hover:text-white transition-all">Rust Borrow Checker</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SLIDE PRESENTATION VIEW (HUMAN-WRITTEN GFG & AMD DEV STYLE) -->
+    <div id="slideView" class="hidden flex-col space-y-5">
+
+      <!-- Active Audio State Bar (If Narration is Playing) -->
+      <div id="activeVoiceBar" class="hidden items-center justify-between px-4 py-2 rounded-xl bg-indigo-950/40 border border-indigo-900/60 text-xs text-indigo-200">
+        <div class="flex items-center gap-2">
+          <div class="sound-wave">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span class="font-medium text-slate-300">Voice Narration Active:</span>
+          <span id="voiceSnippetPreview" class="text-slate-400 italic truncate max-w-[400px]"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="togglePauseSpeech()" id="pauseAudioBtn" class="px-2 py-0.5 rounded bg-indigo-900/80 hover:bg-indigo-800 text-[11px] font-mono text-indigo-200">
+            Pause
+          </button>
+          <button onclick="replayCurrentSlideAudio()" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300">
+            Replay
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Slide Card -->
+      <div class="bg-surface border border-surfaceBorder rounded-2xl p-7 md:p-9 shadow-2xl space-y-6">
+        
+        <!-- Header: Document Taxonomy & Title -->
+        <div class="space-y-2 pb-4 border-b border-surfaceBorder/70">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span id="slideLayer" class="px-2.5 py-0.5 rounded-full font-mono text-[11px] font-semibold bg-indigo-950 text-indigo-300 border border-indigo-800/60"></span>
+              <span class="text-slate-500 font-mono text-[11px]">• Documentation & Architecture</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-400 text-xs font-mono">
+              <span id="slideCounterText"></span>
+            </div>
+          </div>
+
+          <h2 id="slideTitle" class="text-2xl md:text-3xl font-extrabold text-white tracking-tight"></h2>
+          <p id="slideSubtitle" class="text-sm md:text-base text-slate-400 font-medium"></p>
+        </div>
+
+        <!-- Intuitive Analogy / The Big Idea Banner -->
+        <div id="analogyBannerBox" class="p-4 md:p-5 rounded-xl bg-surfaceCard/90 border-l-4 border-cyan-400 text-slate-200 text-sm md:text-base leading-relaxed shadow-sm">
+          <span id="analogyBannerText"></span>
+        </div>
+
+        <!-- Structured Concept Cards Grid (GFG Style) -->
+        <div id="sectionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Dynamically populated cards -->
+        </div>
+
+        <!-- Visual Block: Diagram or Code -->
+        <div id="visualContainer" class="hidden space-y-2 pt-2">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400 font-semibold uppercase">
+            <span id="visualTitle" class="flex items-center gap-1.5 text-cyan-300">
+              <i data-lucide="network" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Architectural Flowchart</span>
+            </span>
+            <span class="text-[10px] text-slate-500">AMD Dev Technical Specification</span>
+          </div>
+          <div id="mermaidTarget" class="p-6 rounded-xl bg-[#080C14] border border-surfaceBorder flex justify-center overflow-x-auto text-sm"></div>
+          <div id="codeTarget" class="hidden rounded-xl bg-[#05080F] border border-surfaceBorder overflow-hidden">
+            <div class="px-4 py-2 bg-[#090D16] border-b border-surfaceBorder flex items-center justify-between text-xs font-mono text-slate-400">
+              <span id="codeFilename" class="text-indigo-300 font-semibold">implementation.py</span>
+              <button onclick="copyCode()" class="hover:text-white text-[11px] flex items-center gap-1">
+                <i data-lucide="copy" class="w-3 h-3"></i> <span id="copyLabel">Copy Code</span>
+              </button>
+            </div>
+            <pre id="codeContent" class="p-4 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed"></pre>
+          </div>
+        </div>
+
+        <!-- GFG Point to Remember / AMD Best Practice Box -->
+        <div id="proTipBox" class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-900/60 flex items-start gap-3 text-xs md:text-sm text-emerald-200">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold uppercase tracking-wider text-emerald-400 text-xs block mb-0.5">GeeksforGeeks & AMD Production Note:</span>
+            <span id="proTipText"></span>
+          </div>
+        </div>
+
+        <!-- Spoken Narration Accordion (Optional reader view) -->
+        <div class="pt-1">
+          <details class="text-xs text-slate-400 group">
+            <summary class="cursor-pointer hover:text-slate-200 font-mono text-[11px] flex items-center gap-1.5 select-none">
+              <i data-lucide="message-square-quote" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>View Spoken Lecture Script</span>
+            </summary>
+            <div id="narrationScriptFull" class="mt-2 p-3.5 rounded-xl bg-surfaceCard text-slate-300 leading-relaxed text-xs border border-surfaceBorder">
+            </div>
+          </details>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM CONTROL BAR -->
+      <div class="bg-surface border border-surfaceBorder rounded-xl px-6 py-3.5 flex items-center justify-between">
+        <button id="prevBtn" onclick="prevSlide()" class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#090D16] hover:bg-slate-800 text-slate-300 text-xs font-semibold disabled:opacity-30 disabled:pointer-events-none transition-colors">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>Previous</span>
+        </button>
+
+        <!-- Prominent Raise Hand Button -->
+        <button onclick="openDoubtModal()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95">
+          <span class="text-base">✋</span>
+          <span>Raise Hand • Ask Doubt</span>
+          <span class="hidden sm:inline px-1.5 py-0.5 rounded text-[10px] bg-black/30 font-mono text-cyan-200">Space</span>
+        </button>
+
+        <button id="nextBtn" onclick="nextSlide()" class="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all">
+          <span id="nextBtnText">Next Slide</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 3. CAPSTONE SYNTHESIS LAB VIEW (SLIDE 6) -->
+    <div id="labView" class="hidden flex-col space-y-6">
+      <div class="bg-surface border border-surfaceBorder rounded-2xl p-7 md:p-9 shadow-2xl space-y-6">
+        <div class="space-y-2 pb-4 border-b border-surfaceBorder">
+          <span class="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-purple-950/80 border border-purple-800 text-purple-300">
+            Layer 6: Capstone Synthesis Challenge
+          </span>
+          <h2 id="labTitle" class="text-2xl md:text-3xl font-extrabold text-white">Reverse-Debugging Incident</h2>
+          <p class="text-sm text-slate-400">Step into the shoes of an on-call engineer: diagnose and patch the bug to prove complete mastery.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left: Incident Telemetry & Code -->
+          <div class="space-y-4">
+            <div class="p-4 rounded-xl bg-surfaceCard border border-surfaceBorder text-xs md:text-sm text-slate-300 space-y-2">
+              <span class="font-bold text-amber-400 uppercase tracking-wide text-xs flex items-center gap-1.5">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i> Telemetry Alert Report
+              </span>
+              <p id="labScenario">Container memory grows without bound under 10k RPS load, causing OOMKilled crash after 20 minutes.</p>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-xs font-mono text-slate-400 uppercase font-semibold">Incident Code (Buggy):</span>
+              <pre id="labBrokenCode" class="p-4 rounded-xl bg-[#05080F] border border-surfaceBorder font-mono text-xs text-rose-300 overflow-x-auto leading-relaxed"></pre>
+            </div>
+          </div>
+
+          <!-- Right: Solution Scratchpad -->
+          <div class="space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+              <span class="text-xs font-mono text-slate-300 font-semibold uppercase">Your Engineering Patch:</span>
+              <textarea 
+                id="solutionInput"
+                rows="10"
+                placeholder="# Write your architectural fix or code patch here...&#10;class ResilientWorker:&#10;    # Explicit lifecycle teardown or WeakRef..."
+                class="w-full p-4 rounded-xl bg-[#05080F] border border-slate-700 font-mono text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed shadow-inner"
+              ></textarea>
+            </div>
+
+            <button 
+              id="gradeBtn"
+              onclick="submitLabSolution()" 
+              class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Evaluate Solution on Local GPU (RTX 3050)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grade Result Box -->
+        <div id="gradeResultBox" class="hidden p-6 rounded-xl bg-surfaceCard/90 border border-surfaceBorder space-y-4 animate-fade-in">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <i data-lucide="award" class="w-6 h-6 text-emerald-400"></i>
+              <span class="font-bold text-base text-white">Topic Mastery Verified</span>
+            </div>
+            <div class="text-lg font-mono font-extrabold text-indigo-400">
+              Score: <span id="gradeScore">92</span> / 100
+            </div>
+          </div>
+
+          <p id="gradeVerdict" class="text-xs md:text-sm text-slate-300 leading-relaxed"></p>
+
+          <div class="pt-2 flex flex-wrap gap-3">
+            <button onclick="downloadCheatSheet()" class="px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Download Developer Cheat-Sheet (.md)</span>
+            </button>
+            <button onclick="resetToSetup()" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+              Master Another Topic
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MID-LECTURE DOUBT MODAL -->
+  <div id="doubtModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-surface border border-indigo-900/60 rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+      <!-- Header -->
+      <div class="px-6 py-4 bg-[#090D16] border-b border-surfaceBorder flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">✋</span>
+          <div>
+            <div class="text-sm font-bold text-white">Ask AI Professor Anything</div>
+            <div id="doubtSlideContext" class="text-xs text-slate-400 truncate max-w-[320px]">Context: Active Slide</div>
+          </div>
+        </div>
+        <button onclick="closeDoubtModal()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Presets -->
+      <div class="px-6 py-3 bg-surface/50 border-b border-surfaceBorder flex flex-wrap gap-2 text-xs">
+        <button onclick="askPreset('analogy')" class="px-3 py-1.5 rounded-lg bg-indigo-950/60 border border-indigo-800 text-indigo-300 hover:bg-indigo-900 transition-colors">
+          💡 Physical Analogy
+        </button>
+        <button onclick="askPreset('proof')" class="px-3 py-1.5 rounded-lg bg-cyan-950/60 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition-colors">
+          ⚙️ AMD/Hardware Proof
+        </button>
+        <button onclick="askPreset('edge_case')" class="px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800 text-emerald-300 hover:bg-emerald-900 transition-colors">
+          ⚠️ Edge Case Trap
+        </button>
+      </div>
+
+      <!-- Response Area -->
+      <div id="doubtResponseArea" class="p-6 overflow-y-auto flex-1 space-y-3 text-xs md:text-sm leading-relaxed text-slate-200 min-h-[160px]">
+        <div id="doubtPlaceholder" class="text-slate-500 text-center py-8">
+          Type your question below or click a preset above.<br/>
+          Answer streams live from your RTX 3050 GPU.
+        </div>
+        <div id="doubtStreamContent" class="whitespace-pre-wrap leading-relaxed"></div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="p-4 bg-[#090D16] border-t border-surfaceBorder flex items-center gap-2">
+        <input 
+          id="doubtInput" 
+          type="text" 
+          placeholder="Ask a doubt about this slide..." 
+          class="flex-1 px-4 py-2.5 rounded-xl bg-[#05080F] border border-slate-700 text-white placeholder-slate-500 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onkeydown="if(event.key==='Enter') submitDoubt()"
+        />
+        <button onclick="submitDoubt()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shrink-0">
+          Ask
+        </button>
+        <button onclick="closeDoubtModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shrink-0">
+          Resume
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentCourse = null;
+    let currentSlideIdx = 0;
+    let timerSeconds = 1200;
+    let timerInterval = null;
+    let lastCheatSheet = "";
+
+    // Narration State (Toggleable)
+    let narrationMode = (localStorage.getItem('primer_narration_mode') !== 'false'); // Default ON
+    let isSpeaking = false;
+    let isPaused = false;
+    let speechRate = 1.0;
+    let currentUtterance = null;
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+    // Sync initial narration UI
+    updateNarrationModeUI();
+
+    function updateNarrationModeUI() {
+      const label = document.getElementById('narrationModeLabel');
+      const dot = document.getElementById('narrationDot');
+      const btn = document.getElementById('narrationModeBtn');
+
+      if (narrationMode) {
+        label.innerText = 'ON';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+        btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold transition-all bg-emerald-950/80 text-emerald-300 border border-emerald-700/60';
+      } else {
+        label.innerText = 'OFF';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-500';
+        btn.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold transition-all bg-slate-900 text-slate-400 border border-slate-700';
+      }
+    }
+
+    function toggleNarrationMode() {
+      narrationMode = !narrationMode;
+      localStorage.setItem('primer_narration_mode', narrationMode);
+      updateNarrationModeUI();
+
+      if (!narrationMode) {
+        stopSpeech();
+      } else if (currentCourse) {
+        const slide = currentCourse.slides[currentSlideIdx];
+        if (slide && slide.narration) {
+          playSpeech(slide.narration);
+        }
+      }
+    }
+
+    function cycleSpeed() {
+      const speeds = [1.0, 1.25, 1.5];
+      const curIdx = speeds.indexOf(speechRate);
+      speechRate = speeds[(curIdx + 1) % speeds.length];
+      document.getElementById('speedBtn').innerText = `${speechRate}x`;
+      
+      if (isSpeaking && currentCourse) {
+        const slide = currentCourse.slides[currentSlideIdx];
+        if (slide && slide.narration) {
+          playSpeech(slide.narration);
+        }
+      }
+    }
+
+    // Pick quick topic
+    function pickTopic(topic) {
+      document.getElementById('topicInput').value = topic;
+      startCourse();
+    }
+
+    // Start Course API Call
+    async function startCourse() {
+      const topic = document.getElementById('topicInput').value.trim();
+      if (!topic) return;
+
+      const level = document.getElementById('levelSelect').value;
+      const minutes = parseInt(document.getElementById('timeSelect').value);
+
+      document.getElementById('loadingStatus').classList.remove('hidden');
+      document.getElementById('startBtn').disabled = true;
+
+      try {
+        const resp = await fetch('/api/course/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, level, minutes })
+        });
+        const data = await resp.json();
+        currentCourse = data;
+        currentSlideIdx = 0;
+        timerSeconds = minutes * 60;
+        
+        launchPresentation();
+      } catch (err) {
+        alert("Failed to connect to local tutor: " + err);
+      } finally {
+        document.getElementById('loadingStatus').classList.add('hidden');
+        document.getElementById('startBtn').disabled = false;
+      }
+    }
+
+    // Launch Presentation View
+    function launchPresentation() {
+      document.getElementById('setupView').classList.add('hidden');
+      document.getElementById('slideView').classList.remove('hidden');
+      document.getElementById('slideView').classList.add('flex');
+      document.getElementById('activeTopicBadge').classList.remove('hidden');
+      document.getElementById('sessionTimer').classList.remove('hidden');
+      document.getElementById('sessionTimer').classList.add('flex');
+      document.getElementById('narrationToggleContainer').classList.remove('hidden');
+      document.getElementById('narrationToggleContainer').classList.add('flex');
+
+      document.getElementById('topicNameHeader').innerText = currentCourse.topic;
+
+      // Start timer
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (timerSeconds > 0) {
+          timerSeconds--;
+          const m = Math.floor(timerSeconds / 60);
+          const s = timerSeconds % 60;
+          document.getElementById('timeRemainingText').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+      }, 1000);
+
+      renderCurrentSlide();
+    }
+
+    // Render Current Slide (GFG & AMD Dev human style)
+    function renderCurrentSlide() {
+      if (!currentCourse) return;
+
+      // If slide 6, render Lab view
+      if (currentSlideIdx === currentCourse.slides.length - 1) {
+        document.getElementById('slideView').classList.add('hidden');
+        document.getElementById('labView').classList.remove('hidden');
+        document.getElementById('labView').classList.add('flex');
+        renderLabView();
+        return;
+      }
+
+      document.getElementById('labView').classList.add('hidden');
+      document.getElementById('slideView').classList.remove('hidden');
+
+      const slide = currentCourse.slides[currentSlideIdx];
+
+      // Layer & Headers
+      document.getElementById('slideLayer').innerText = slide.layer || `Layer ${currentSlideIdx + 1}`;
+      document.getElementById('slideIndicator').innerText = `Slide ${currentSlideIdx + 1} / ${currentCourse.slides.length}`;
+      document.getElementById('slideCounterText').innerText = `~3 mins pace`;
+      document.getElementById('slideTitle').innerText = slide.title;
+      document.getElementById('slideSubtitle').innerText = slide.subtitle || "";
+
+      // Intuitive Analogy Banner
+      document.getElementById('analogyBannerText').innerText = slide.analogy_banner || slide.big_insight || slide.title;
+
+      // Sections Grid (Clean GFG style cards)
+      const grid = document.getElementById('sectionsGrid');
+      grid.innerHTML = "";
+      const sections = slide.sections || slide.cards || [];
+
+      if (sections.length > 0) {
+        sections.forEach(s => {
+          const cardEl = document.createElement('div');
+          cardEl.className = "p-5 rounded-xl bg-surfaceCard border border-surfaceBorder space-y-2 hover:border-slate-700 transition-colors";
+          cardEl.innerHTML = `
+            <span class="text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-900/60">${s.badge || s.tag || 'Key Concept'}</span>
+            <h4 class="font-bold text-white text-sm md:text-base">${s.title || s.headline}</h4>
+            <p class="text-xs md:text-sm text-slate-300 leading-relaxed">${s.description || s.explanation}</p>
+          `;
+          grid.appendChild(cardEl);
+        });
+      }
+
+      // Visual: Diagram or Code Block
+      const visualContainer = document.getElementById('visualContainer');
+      const mermaidTarget = document.getElementById('mermaidTarget');
+      const codeTarget = document.getElementById('codeTarget');
+
+      if (slide.diagram) {
+        visualContainer.classList.remove('hidden');
+        mermaidTarget.classList.remove('hidden');
+        codeTarget.classList.add('hidden');
+        document.getElementById('visualTitle').innerHTML = '<i data-lucide="network" class="w-3.5 h-3.5 text-cyan-400"></i><span>Architectural Flowchart</span>';
+        mermaidTarget.innerHTML = "";
+        try {
+          const id = "mermaid-" + Math.random().toString(36).substring(7);
+          mermaid.render(id, slide.diagram).then(({ svg }) => {
+            mermaidTarget.innerHTML = svg;
+          });
+        } catch {
+          mermaidTarget.innerText = slide.diagram;
+        }
+      } else if (slide.code) {
+        visualContainer.classList.remove('hidden');
+        mermaidTarget.classList.add('hidden');
+        codeTarget.classList.remove('hidden');
+        document.getElementById('visualTitle').innerHTML = '<i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400"></i><span>Production Implementation Anatomy</span>';
+        document.getElementById('codeFilename').innerText = slide.code.filename || "implementation.py";
+        document.getElementById('codeContent').innerText = slide.code.content || slide.code;
+      } else {
+        visualContainer.classList.add('hidden');
+      }
+
+      // GFG Note / AMD Pro-Tip
+      document.getElementById('proTipText').innerText = slide.gfg_pro_tip || slide.senior_gotcha || "Always profile memory consumption under synthetic peak load before shipping to production clusters.";
+
+      // Full script reader
+      document.getElementById('narrationScriptFull').innerText = slide.narration || "No narration script for this slide.";
+
+      // Navigation button states
+      document.getElementById('prevBtn').disabled = (currentSlideIdx === 0);
+      document.getElementById('nextBtnText').innerText = (currentSlideIdx === currentCourse.slides.length - 2) ? "Start Synthesis Lab" : "Next Slide";
+
+      // Refresh icons
+      lucide.createIcons();
+
+      // Audio Narration Mode handling
+      if (narrationMode && slide.narration) {
+        playSpeech(slide.narration);
+      } else {
+        stopSpeech();
+      }
+    }
+
+    function renderLabView() {
+      const slide = currentCourse.slides[currentSlideIdx];
+      document.getElementById('labTitle').innerText = slide.title || "Reverse-Debugging Incident";
+      document.getElementById('slideIndicator').innerText = `Slide 6 / 6 (Lab)`;
+      if (slide.code) {
+        document.getElementById('labBrokenCode').innerText = slide.code.content || slide.code;
+      }
+      lucide.createIcons();
+      if (narrationMode && slide.narration) {
+        playSpeech(slide.narration);
+      } else {
+        stopSpeech();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlideIdx > 0) {
+        currentSlideIdx--;
+        renderCurrentSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentCourse && currentSlideIdx < currentCourse.slides.length - 1) {
+        currentSlideIdx++;
+        renderCurrentSlide();
+      }
+    }
+
+    // Speech Narration Controller
+    function playSpeech(text) {
+      stopSpeech();
+      if (!('speechSynthesis' in window)) return;
+
+      const cleanText = text
+        .replace(/`{1,3}[\s\S]*?`{1,3}/g, 'code snippet')
+        .replace(/[#*_~>]/g, ' ')
+        .trim();
+
+      const u = new SpeechSynthesisUtterance(cleanText);
+      u.rate = speechRate;
+      
+      // Select best English voice
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('en'));
+      if (preferred) u.voice = preferred;
+
+      u.onstart = () => {
+        isSpeaking = true;
+        isPaused = false;
+        document.getElementById('activeVoiceBar').classList.remove('hidden');
+        document.getElementById('activeVoiceBar').classList.add('flex');
+        document.getElementById('voiceSnippetPreview').innerText = `"${cleanText.slice(0, 80)}..."`;
+        document.getElementById('pauseAudioBtn').innerText = 'Pause';
+      };
+
+      u.onend = () => {
+        stopSpeech();
+      };
+
+      u.onerror = () => {
+        stopSpeech();
+      };
+
+      currentUtterance = u;
+      window.speechSynthesis.speak(u);
+    }
+
+    function stopSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      isSpeaking = false;
+      isPaused = false;
+      currentUtterance = null;
+      document.getElementById('activeVoiceBar').classList.add('hidden');
+      document.getElementById('activeVoiceBar').classList.remove('flex');
+    }
+
+    function togglePauseSpeech() {
+      if (!isSpeaking) return;
+      if (isPaused) {
+        window.speechSynthesis.resume();
+        isPaused = false;
+        document.getElementById('pauseAudioBtn').innerText = 'Pause';
+      } else {
+        window.speechSynthesis.pause();
+        isPaused = true;
+        document.getElementById('pauseAudioBtn').innerText = 'Resume';
+      }
+    }
+
+    function replayCurrentSlideAudio() {
+      if (!currentCourse) return;
+      const slide = currentCourse.slides[currentSlideIdx];
+      if (slide && slide.narration) {
+        playSpeech(slide.narration);
+      }
+    }
+
+    function copyCode() {
+      const code = document.getElementById('codeContent').innerText;
+      navigator.clipboard.writeText(code);
+      document.getElementById('copyLabel').innerText = 'Copied!';
+      setTimeout(() => document.getElementById('copyLabel').innerText = 'Copy Code', 2000);
+    }
+
+    // Doubt Modal
+    function openDoubtModal() {
+      if (!currentCourse) return;
+      if (isSpeaking) window.speechSynthesis.pause();
+      const slide = currentCourse.slides[currentSlideIdx];
+      document.getElementById('doubtSlideContext').innerText = `Slide ${currentSlideIdx + 1}: ${slide.title}`;
+      document.getElementById('doubtStreamContent').innerText = "";
+      document.getElementById('doubtPlaceholder').classList.remove('hidden');
+      document.getElementById('doubtModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('doubtInput').focus(), 100);
+      lucide.createIcons();
+    }
+
+    function closeDoubtModal() {
+      document.getElementById('doubtModal').classList.add('hidden');
+      if (isSpeaking && !isPaused) window.speechSynthesis.resume();
+    }
+
+    function askPreset(mode) {
+      const questions = {
+        analogy: "Can you give a clean, memorable physical analogy for this concept like GeeksforGeeks?",
+        proof: "Explain the exact CPU cache, memory, and hardware pipeline mechanics like an AMD technical guide.",
+        edge_case: "What is the #1 silent edge case or race condition where this breaks in production?"
+      };
+      document.getElementById('doubtInput').value = questions[mode];
+      submitDoubt(mode);
+    }
+
+    async function submitDoubt(mode = "general") {
+      const doubt = document.getElementById('doubtInput').value.trim();
+      if (!doubt || !currentCourse) return;
+
+      const slide = currentCourse.slides[currentSlideIdx];
+      document.getElementById('doubtPlaceholder').classList.add('hidden');
+      const streamDiv = document.getElementById('doubtStreamContent');
+      streamDiv.innerText = "⚡ Senior Staff Tutor is thinking...";
+
+      try {
+        const resp = await fetch('/api/doubt/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: currentCourse.topic,
+            slide_title: slide.title,
+            slide_insight: slide.analogy_banner || slide.title,
+            doubt: doubt,
+            mode: mode
+          })
+        });
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        streamDiv.innerText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          streamDiv.innerText += decoder.decode(value);
+        }
+      } catch (err) {
+        streamDiv.innerText = "Error contacting tutor: " + err;
+      }
+    }
+
+    // Synthesis Lab Solution Grading
+    async function submitLabSolution() {
+      const solution = document.getElementById('solutionInput').value.trim();
+      if (!solution) return;
+
+      const btn = document.getElementById('gradeBtn');
+      btn.disabled = true;
+      btn.innerText = "⚡ Staff Engineer Evaluating Solution on RTX 3050...";
+
+      try {
+        const resp = await fetch('/api/synthesis/grade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: currentCourse.topic,
+            challenge: document.getElementById('labScenario').innerText,
+            solution: solution
+          })
+        });
+
+        const data = await resp.json();
+        document.getElementById('gradeScore').innerText = data.score || 92;
+        document.getElementById('gradeVerdict').innerText = data.verdict;
+        lastCheatSheet = data.cheat_sheet || `# ${currentCourse.topic} Mastery Cheat Sheet`;
+
+        document.getElementById('gradeResultBox').classList.remove('hidden');
+
+        if (data.passed) {
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+        }
+      } catch (err) {
+        alert("Grading error: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i><span>Evaluate Solution on Local GPU (RTX 3050)</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function downloadCheatSheet() {
+      const element = document.createElement('a');
+      const file = new Blob([lastCheatSheet], { type: 'text/markdown' });
+      element.href = URL.createObjectURL(file);
+      element.download = `${currentCourse.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-primer-cheatsheet.md`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
+
+    function resetToSetup() {
+      stopSpeech();
+      clearInterval(timerInterval);
+      currentCourse = null;
+      document.getElementById('setupView').classList.remove('hidden');
+      document.getElementById('slideView').classList.add('hidden');
+      document.getElementById('slideView').classList.remove('flex');
+      document.getElementById('labView').classList.add('hidden');
+      document.getElementById('activeTopicBadge').classList.add('hidden');
+      document.getElementById('sessionTimer').classList.add('hidden');
+      document.getElementById('narrationToggleContainer').classList.add('hidden');
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      const target = e.target;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (currentCourse) {
+          const modal = document.getElementById('doubtModal');
+          if (modal.classList.contains('hidden')) {
+            openDoubtModal();
+          } else {
+            closeDoubtModal();
+          }
+        }
+      } else if (e.code === 'KeyN') {
+        toggleNarrationMode();
+      } else if (e.code === 'ArrowRight') {
+        nextSlide();
+      } else if (e.code === 'ArrowLeft') {
+        prevSlide();
+      } else if (e.code === 'Escape') {
+        closeDoubtModal();
+      }
+    });
+  </script>
+</body>
+</html>
